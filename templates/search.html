@@ -46,7 +46,7 @@
 <p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>{% endfor %}</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>{% else %}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>{% elif request.method == 'POST' %}</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;p class="text-muted text-center"&gt;No se encontraron resultados.&lt;/p&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>{% endif %}</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
