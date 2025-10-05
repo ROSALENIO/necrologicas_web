@@ -3,26 +3,25 @@ import sqlite3
 
 app = Flask(__name__)
 
-def query_db(query, params=()):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    results = cursor.fetchall()
-    conn.close()
-    return results
+def get_db_connection():
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
-@app.route("/")
+@app.route('/')
 def index():
-    avisos = query_db("SELECT nombre, fecha, texto FROM avisos ORDER BY fecha DESC LIMIT 50")
-    return render_template("index.html", avisos=avisos)
+    conn = get_db_connection()
+    rows = conn.execute('SELECT * FROM obituaries ORDER BY fecha DESC').fetchall()
+    conn.close()
+    return render_template('index.html', rows=rows)
 
-@app.route("/buscar", methods=["GET", "POST"])
+@app.route('/buscar', methods=['GET', 'POST'])
 def buscar():
     resultados = []
-    if request.method == "POST":
-        nombre = request.form.get("nombre")
-        resultados = query_db("SELECT nombre, fecha, texto FROM avisos WHERE nombre LIKE ?", [f"%{nombre}%"])
-    return render_template("search.html", resultados=resultados)
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        conn = get_db_connection()
+        query = "SELECT * FROM obituaries WHERE nombre LIKE ? ORDER BY fecha DESC"
+        resultados = conn.execute(query, ('%' + nombre + '%',)).fetchall()
+        conn.close()
+    return render_template('search.html', resultados=resultados)
