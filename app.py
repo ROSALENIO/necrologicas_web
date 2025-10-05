@@ -11,14 +11,15 @@ def get_db_connection():
 @app.route('/buscar', methods=['GET', 'POST'])
 def buscar():
     resultados = []
+    nombre = ''
     if request.method == 'POST':
-        nombre = request.form['nombre']
+        nombre = request.form['nombre'].strip()
         conn = get_db_connection()
         query = "SELECT * FROM obituaries WHERE nombre LIKE ? ORDER BY fecha DESC"
         resultados = conn.execute(query, ('%' + nombre + '%',)).fetchall()
         conn.close()
-    return render_template('search.html', resultados=resultados)
+    return render_template('search.html', resultados=resultados, nombre=nombre)
 
 @app.route('/')
 def home():
-    return render_template('search.html', resultados=[])
+    return render_template('search.html', resultados=[], nombre='')
