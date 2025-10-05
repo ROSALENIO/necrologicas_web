@@ -23,9 +23,9 @@
 <p class="p1"><span class="s1">&lt;body class="bg-light"&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="container py-5"&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;h1 class="mb-4 text-center"&gt;Buscar necrológicas&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;form method="POST" class="mb-5"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;form method="POST" action="/buscar" class="mb-5"&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="input-group"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;input type="text" name="nombre" class="form-control" placeholder="Ingrese nombre"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;input type="text" name="nombre" class="form-control" placeholder="Ingrese nombre" value="{{ request.form.nombre }}"&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-primary" type="submit"&gt;Buscar&lt;/button&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/form&gt;</span></p>
