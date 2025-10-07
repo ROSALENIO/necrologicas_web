@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import sqlite3
 from datetime import datetime
 
-URL = "https://www.rosalenio.com.ar/necrologicas"
+URL = "https://elrosalenio.com.ar/necrologicas.php?_pagi_pg=1"
 DB_PATH = "database.db"
 
 def scrape_and_save():
