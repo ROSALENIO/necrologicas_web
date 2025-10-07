@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: necrologicas-web
+    env: python
+    buildCommand: ""
+    startCommand: python app.py
+    repo: https://github.com/ROSALENIO/necrologicas_web
+    branch: main
+    autoDeploy: true
+
+  - type: worker
+    name: necrologicas-scraper
+    env: python
+    buildCommand: ""
+    startCommand: python scraper_total.py
+    repo: https://github.com/ROSALENIO/necrologicas_web
+    branch: main
+    autoDeploy: true

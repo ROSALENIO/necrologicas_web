@@ -1,25 +1,36 @@
 from flask import Flask, render_template, request
 import sqlite3
+import unicodedata
+import os
 
 app = Flask(__name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+# Cargar configuración desde .env
+DEBUG = os.getenv("DEBUG", "False") == "True"
+PORT = int(os.getenv("PORT", "5000"))
 
-@app.route('/buscar', methods=['GET', 'POST'])
+def normalizar(texto):
+    return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("utf-8").lower()
+
+@app.route("/", methods=["GET", "POST"])
 def buscar():
     resultados = []
-    nombre = ''
-    if request.method == 'POST':
-        nombre = request.form['nombre'].strip()
-        conn = get_db_connection()
-        query = "SELECT * FROM obituaries WHERE nombre LIKE ? ORDER BY fecha DESC"
-        resultados = conn.execute(query, ('%' + nombre + '%',)).fetchall()
-        conn.close()
-    return render_template('search.html', resultados=resultados, nombre=nombre)
+    if request.method == "POST":
+        termino = request.form.get("termino", "").strip()
+        termino_norm = normalizar(termino)
 
-@app.route('/')
-def home():
-    return render_template('search.html', resultados=[], nombre='')
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT nombre, edad, fecha, calle, localidad, texto
+            FROM avisos
+            WHERE LOWER(nombre) LIKE ?
+            ORDER BY fecha DESC
+        """, (f"%{termino_norm}%",))
+        resultados = cursor.fetchall()
+        conn.close()
+
+    return render_template("search.html", resultados=resultados)
+
+if __name__ == "__main__":
+    app.run(debug=DEBUG, port=PORT)

@@ -1,87 +1,104 @@
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
+import unicodedata
+import time
+from datetime import datetime, timedelta
 
-DB_PATH = "database.db"
-BASE_URL = "https://elrosalenio.com.ar/necrologicas.php?_pagi_pg={}"
+URL = "https://www.rosalenio.com.ar/necrologicas"
+HORARIOS = ["00:00", "06:00", "12:00", "18:00"]
 
-def crear_tabla():
-    conn = sqlite3.connect(DB_PATH)
+def normalizar(texto):
+    return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("utf-8").lower()
+
+def obtener_html():
+    try:
+        response = requests.get(URL, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        log_ejecucion(f"⚠️ Error al obtener HTML: {e}")
+        return ""
+
+def parsear_avisos(html):
+    soup = BeautifulSoup(html, "html.parser")
+    avisos = []
+
+    bloques = soup.find_all("div", class_="necrologica")  # Ajustar según HTML real
+
+    for b in bloques:
+        nombre = b.find("h3").get_text(strip=True) if b.find("h3") else ""
+        texto = b.find("p").get_text(strip=True) if b.find("p") else ""
+        fecha = b.find("span", class_="fecha").get_text(strip=True) if b.find("span", class_="fecha") else ""
+
+        avisos.append({
+            "nombre": nombre,
+            "edad": "",
+            "fecha": fecha,
+            "calle": "",
+            "localidad": "",
+            "texto": texto
+        })
+
+    return avisos
+
+def guardar_en_db(avisos):
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
+
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS avisos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT,
-        edad INTEGER,
-        fecha TEXT,
-        calle TEXT,
-        localidad TEXT,
-        texto TEXT,
-        UNIQUE(nombre, fecha, localidad)
-    )
+        CREATE TABLE IF NOT EXISTS avisos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT,
+            edad TEXT,
+            fecha TEXT,
+            calle TEXT,
+            localidad TEXT,
+            texto TEXT
+        )
     """)
+
+    nuevos = 0
+    for a in avisos:
+        nombre_norm = normalizar(a["nombre"])
+        cursor.execute("SELECT COUNT(*) FROM avisos WHERE LOWER(nombre) = ?", (nombre_norm,))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO avisos (nombre, edad, fecha, calle, localidad, texto)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (a["nombre"], a["edad"], a["fecha"], a["calle"], a["localidad"], a["texto"]))
+            nuevos += 1
+
     conn.commit()
     conn.close()
+    log_ejecucion(f"✅ {nuevos} avisos nuevos guardados.")
 
-def guardar_aviso(nombre, edad, fecha, calle, localidad, texto):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-        INSERT INTO avisos (nombre, edad, fecha, calle, localidad, texto)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (nombre, edad, fecha, calle, localidad, texto))
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
+def esperar_hasta_proximo_horario():
+    ahora = datetime.now()
+    proximos = []
 
-def extraer_avisos():
-    nuevos = 0
-    for pagina in range(1, 330):
-        url = BASE_URL.format(pagina)
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text, "html.parser")
-        tabla = soup.find("table")
-        if not tabla:
-            continue
-        filas = tabla.find_all("tr")[1:]
+    for h in HORARIOS:
+        hora, minuto = map(int, h.split(":"))
+        objetivo = ahora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
+        if objetivo <= ahora:
+            objetivo += timedelta(days=1)
+        proximos.append(objetivo)
 
-        for fila in filas:
-            celdas = fila.find_all("td")
-            if len(celdas) < 4:
-                continue
+    siguiente = min(proximos)
+    espera = (siguiente - ahora).total_seconds()
+    log_ejecucion(f"🕒 Próximo scraping a las {siguiente.strftime('%H:%M')}. Esperando {int(espera // 60)} minutos...")
+    time.sleep(espera)
 
-            fecha = celdas[0].get_text(strip=True)
-            edad = celdas[1].get_text(strip=True)
-            nombre = celdas[2].get_text(strip=True)
-            domicilio = celdas[3].get_text(strip=True)
-
-            edad = int(edad) if edad.isdigit() else None
-
-            if "," in domicilio:
-                partes = domicilio.split(",", 1)
-                calle = partes[0].strip()
-                localidad = partes[1].strip()
-            else:
-                calle = domicilio
-                localidad = ""
-
-            texto = f"Falleció el {fecha} a los {edad} años. Domicilio: {domicilio}"
-
-            if guardar_aviso(nombre, edad, fecha, calle, localidad, texto):
-                nuevos += 1
-
-        print(f"Página {pagina} procesada.")
-
-    print(f"Total de avisos nuevos insertados: {nuevos}")
-
-def main():
-    crear_tabla()
-    extraer_avisos()
+def log_ejecucion(mensaje):
+    with open("scraper.log", "a", encoding="utf-8") as f:
+        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write(f"[{ahora}] {mensaje}\n")
 
 if __name__ == "__main__":
-    main()
-
+    while True:
+        esperar_hasta_proximo_horario()
+        html = obtener_html()
+        if html:
+            avisos = parsear_avisos(html)
+            guardar_en_db(avisos)
+        log_ejecucion("🔁 Esperando al próximo horario...")
