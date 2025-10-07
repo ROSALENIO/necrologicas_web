@@ -12,7 +12,7 @@ def scrape_and_save():
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        avisos = soup.select(".necrologicas .necrologica")
+        avisos = soup.select(".necrologica")
         if not avisos:
             print("⚠️ No se encontraron avisos.")
             return
