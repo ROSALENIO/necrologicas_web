@@ -12,6 +12,8 @@ def scrape_and_save():
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
+        print(response.text)  # 🔍 Debug: ver HTML recibido por Render
+
         avisos = soup.select(".necrologica")
         if not avisos:
             print("⚠️ No se encontraron avisos.")
