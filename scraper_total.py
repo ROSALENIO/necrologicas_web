@@ -1,4 +1,4 @@
-import requests
+import httpx
 from bs4 import BeautifulSoup
 import sqlite3
 from datetime import datetime
@@ -6,13 +6,18 @@ from datetime import datetime
 URL = "https://elrosalenio.com.ar/necrologicas.php?_pagi_pg=1"
 DB_PATH = "database.db"
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-AR,es;q=0.9,en;q=0.8",
+    "Connection": "keep-alive",
+}
+
 def scrape_and_save():
     try:
-        response = requests.get(URL)
+        response = httpx.get(URL, headers=HEADERS, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-
-        print(response.text)  # 🔍 Debug: ver HTML recibido por Render
 
         avisos = soup.select(".necrologica")
         if not avisos:
