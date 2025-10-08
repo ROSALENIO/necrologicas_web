@@ -2,3 +2,4 @@ flask==3.0.3
 requests
 beautifulsoup4
 gunicorn
+httpx==0.28.1
